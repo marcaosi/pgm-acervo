@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
-import { useTransition, useState, useCallback } from "react"
+import { useTransition, useState, useCallback, useEffect } from "react"
 import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -27,22 +27,18 @@ export function SearchFilter({ allTags }: SearchFilterProps) {
     [pathname, router]
   )
 
-  function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter") return
-    const params = new URLSearchParams(searchParams)
-    if (q) params.set("q", q)
-    else params.delete("q")
-    push(params)
-  }
-
-  function handleSearchBlur() {
-    const current = searchParams.get("q") ?? ""
-    if (q === current) return
-    const params = new URLSearchParams(searchParams)
-    if (q) params.set("q", q)
-    else params.delete("q")
-    push(params)
-  }
+  // Auto-debounce: dispara busca 400ms após parar de digitar
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const current = searchParams.get("q") ?? ""
+      if (q === current) return
+      const params = new URLSearchParams(searchParams)
+      if (q) params.set("q", q)
+      else params.delete("q")
+      push(params)
+    }, 400)
+    return () => clearTimeout(timeout)
+  }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleTag(tag: string) {
     const params = new URLSearchParams(searchParams)
@@ -62,11 +58,10 @@ export function SearchFilter({ allTags }: SearchFilterProps) {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          onKeyDown={handleSearch}
-          onBlur={handleSearchBlur}
           placeholder="Buscar por nome..."
           className={cn(
-            "flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            "flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm",
+            "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             isPending && "opacity-70"
           )}
         />

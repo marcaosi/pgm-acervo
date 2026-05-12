@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog"
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { createLocation, updateLocation } from "@/actions/location"
 
 interface LocationFormProps {
@@ -19,8 +20,10 @@ export function LocationForm({ location, trigger }: LocationFormProps) {
     startTransition(async () => {
       if (location) {
         await updateLocation(location.id, formData)
+        toast.success("Local atualizado!")
       } else {
         await createLocation(formData)
+        toast.success("Local criado!")
       }
       setOpen(false)
     })

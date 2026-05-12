@@ -4,36 +4,43 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { PageHeader } from "@/components/ui/page-header"
 import { EmptyState } from "@/components/ui/empty-state"
+import { Pagination } from "@/components/ui/pagination"
 import { ItemRow } from "@/components/itens/item-row"
 import { SearchFilter } from "@/components/itens/search-filter"
 
+const PER_PAGE = 20
+
 interface Props {
-  searchParams: Promise<{ q?: string; tags?: string; slotId?: string }>
+  searchParams: Promise<{ q?: string; tags?: string; slotId?: string; page?: string }>
 }
 
 export default async function ItensPage({ searchParams }: Props) {
-  const { q, tags: tagsParam, slotId } = await searchParams
+  const { q, tags: tagsParam, slotId, page: pageParam } = await searchParams
   const session = await auth()
   const userId = session!.user!.id!
 
+  const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1)
   const selectedTags = (tagsParam ?? "").split(",").filter(Boolean)
 
-  const [items, allTags] = await Promise.all([
+  const where = {
+    userId,
+    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(selectedTags.length ? { tags: { some: { tag: { name: { in: selectedTags } } } } } : {}),
+    ...(slotId ? { slotId } : {}),
+  }
+
+  const [items, total, allTags] = await Promise.all([
     prisma.item.findMany({
-      where: {
-        userId,
-        ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
-        ...(selectedTags.length
-          ? { tags: { some: { tag: { name: { in: selectedTags } } } } }
-          : {}),
-        ...(slotId ? { slotId } : {}),
-      },
+      where,
       include: {
         tags: { include: { tag: true } },
         slot: { include: { grouper: { include: { location: true } } } },
       },
       orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * PER_PAGE,
+      take: PER_PAGE,
     }),
+    prisma.item.count({ where }),
     prisma.tag.findMany({
       where: { userId },
       select: { name: true },
@@ -41,7 +48,18 @@ export default async function ItensPage({ searchParams }: Props) {
     }),
   ])
 
+  const totalPages = Math.ceil(total / PER_PAGE)
   const hasFilters = !!(q || selectedTags.length || slotId)
+
+  function buildHref(page: number) {
+    const params = new URLSearchParams()
+    if (q) params.set("q", q)
+    if (tagsParam) params.set("tags", tagsParam)
+    if (slotId) params.set("slotId", slotId)
+    if (page > 1) params.set("page", String(page))
+    const qs = params.toString()
+    return `/itens${qs ? `?${qs}` : ""}`
+  }
 
   return (
     <div>
@@ -92,11 +110,17 @@ export default async function ItensPage({ searchParams }: Props) {
       ) : (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground mb-3">
-            {items.length} {items.length === 1 ? "item encontrado" : "itens encontrados"}
+            {total} {total === 1 ? "item encontrado" : "itens encontrados"}
+            {totalPages > 1 && ` — página ${currentPage} de ${totalPages}`}
           </p>
           {items.map((item) => (
             <ItemRow key={item.id} item={item} />
           ))}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            buildHref={buildHref}
+          />
         </div>
       )}
     </div>

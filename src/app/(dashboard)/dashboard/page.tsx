@@ -3,6 +3,7 @@ import { Package, Box, MapPin, PackageX, Plus, Search } from "lucide-react"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { ItemRow } from "@/components/itens/item-row"
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist"
 
 interface StatCardProps {
   label: string
@@ -35,24 +36,34 @@ export default async function DashboardPage() {
   const session = await auth()
   const userId = session!.user!.id!
 
-  const [totalItems, totalSlots, totalLocations, unallocated, recentItems] = await Promise.all([
-    prisma.item.count({ where: { userId } }),
-    prisma.slot.count({ where: { grouper: { location: { userId } } } }),
-    prisma.location.count({ where: { userId } }),
-    prisma.item.count({ where: { userId, slotId: null } }),
-    prisma.item.findMany({
-      where: { userId },
-      include: {
-        tags: { include: { tag: true } },
-        slot: { include: { grouper: { include: { location: true } } } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-  ])
+  const [totalItems, totalSlots, totalLocations, unallocated, recentItems, hasGrouper, hasSlot] =
+    await Promise.all([
+      prisma.item.count({ where: { userId } }),
+      prisma.slot.count({ where: { grouper: { location: { userId } } } }),
+      prisma.location.count({ where: { userId } }),
+      prisma.item.count({ where: { userId, slotId: null } }),
+      prisma.item.findMany({
+        where: { userId },
+        include: {
+          tags: { include: { tag: true } },
+          slot: { include: { grouper: { include: { location: true } } } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.grouper.count({ where: { location: { userId } } }),
+      prisma.slot.count({ where: { grouper: { location: { userId } } } }),
+    ])
 
   return (
     <div className="space-y-8">
+      <OnboardingChecklist
+        hasLocation={totalLocations > 0}
+        hasGrouper={hasGrouper > 0}
+        hasSlot={totalSlots > 0}
+        hasItem={totalItems > 0}
+      />
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">

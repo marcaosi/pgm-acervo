@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog"
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { createGrouper, updateGrouper } from "@/actions/grouper"
 
 interface GrouperFormProps {
@@ -20,8 +21,10 @@ export function GrouperForm({ locationId, grouper, trigger }: GrouperFormProps) 
     startTransition(async () => {
       if (grouper) {
         await updateGrouper(grouper.id, locationId, formData)
+        toast.success("Agrupador atualizado!")
       } else {
         await createGrouper(locationId, formData)
+        toast.success("Agrupador criado!")
       }
       setOpen(false)
     })

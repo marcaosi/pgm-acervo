@@ -225,6 +225,14 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
 
           <SubmitButton label={isLogin ? "Entrar com e-mail" : "Criar conta"} />
+
+          {isLogin && (
+            <p className="text-center text-xs text-muted-foreground">
+              <Link href="/esqueci-senha" className="underline underline-offset-4 hover:text-primary">
+                Esqueci minha senha
+              </Link>
+            </p>
+          )}
         </form>
 
         <div className="relative">

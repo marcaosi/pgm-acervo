@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { deleteItem } from "@/actions/item"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
@@ -18,6 +19,7 @@ export function DeleteItemButton({ id, name }: DeleteItemButtonProps) {
       description={`"${name}" será removido permanentemente do seu acervo. Esta ação não pode ser desfeita.`}
       onConfirm={async () => {
         await deleteItem(id)
+        toast.success("Item removido.")
         router.push("/itens")
       }}
       trigger={

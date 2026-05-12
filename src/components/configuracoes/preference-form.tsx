@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { updateDigitalPreference } from "@/actions/settings"
 
 interface PreferenceFormProps {
@@ -19,8 +20,10 @@ export function PreferenceForm({ current }: PreferenceFormProps) {
       const result = await updateDigitalPreference(formData)
       if (result?.error) {
         setMessage({ type: "error", text: result.error })
+        toast.error(result.error)
       } else {
         setMessage({ type: "success", text: "Preferência salva com sucesso." })
+        toast.success("Preferência salva!")
       }
     })
   }

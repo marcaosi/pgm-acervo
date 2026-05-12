@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { updateProfile } from "@/actions/settings"
 
 interface ProfileFormProps {
@@ -18,8 +19,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const result = await updateProfile(formData)
       if (result?.error) {
         setMessage({ type: "error", text: result.error })
+        toast.error(result.error)
       } else {
         setMessage({ type: "success", text: "Perfil atualizado com sucesso." })
+        toast.success("Perfil atualizado!")
       }
     })
   }

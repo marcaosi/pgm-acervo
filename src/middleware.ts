@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
-const publicRoutes = ["/", "/login", "/cadastro"]
+const publicRoutes = ["/", "/login", "/cadastro", "/esqueci-senha"]
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
@@ -18,5 +18,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|verificar-email).*)"],
 }

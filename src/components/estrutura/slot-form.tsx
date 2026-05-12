@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog"
 import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { createSlot, updateSlot } from "@/actions/slot"
 
 interface SlotFormProps {
@@ -21,8 +22,10 @@ export function SlotForm({ grouperId, locationId, slot, trigger }: SlotFormProps
     startTransition(async () => {
       if (slot) {
         await updateSlot(slot.id, grouperId, locationId, formData)
+        toast.success("Slot atualizado!")
       } else {
         await createSlot(grouperId, locationId, formData)
+        toast.success("Slot criado!")
       }
       setOpen(false)
     })
