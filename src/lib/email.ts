@@ -1,6 +1,13 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Inicialização lazy para não quebrar quando RESEND_API_KEY não está configurado
+let _resend: Resend | null = null
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
+
 const FROM = process.env.EMAIL_FROM ?? "pgm-acervo <onboarding@resend.dev>"
 const APP_URL = process.env.AUTH_URL ?? "http://localhost:3000"
 
@@ -10,6 +17,8 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     return
   }
   const url = `${APP_URL}/redefinir-senha/${token}`
+  const resend = getResend()
+  if (!resend) return
   await resend.emails.send({
     from: FROM,
     to,
@@ -36,6 +45,8 @@ export async function sendVerificationEmail(to: string, token: string) {
     return
   }
   const url = `${APP_URL}/verificar-email/${token}`
+  const resend = getResend()
+  if (!resend) return
   await resend.emails.send({
     from: FROM,
     to,

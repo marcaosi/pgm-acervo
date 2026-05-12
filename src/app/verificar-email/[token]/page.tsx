@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { verifyEmail } from "@/actions/email-verification"
+import { verifyEmail } from "@/lib/verify-email"
 
 interface Props {
   params: Promise<{ token: string }>
