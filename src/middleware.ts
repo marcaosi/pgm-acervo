@@ -1,16 +1,18 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
-const publicRoutes = ["/login", "/cadastro"]
+const publicRoutes = ["/", "/login", "/cadastro"]
 
 export default auth((req) => {
-  const isPublic = publicRoutes.includes(req.nextUrl.pathname)
+  const { pathname } = req.nextUrl
+  const isPublic = publicRoutes.includes(pathname)
 
   if (!req.auth && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url))
   }
 
-  if (req.auth && isPublic) {
+  // Usuário autenticado na landing ou nas páginas de auth → dashboard
+  if (req.auth && (pathname === "/" || isPublic)) {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 })

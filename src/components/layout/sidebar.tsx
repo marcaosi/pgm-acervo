@@ -24,7 +24,7 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-56 shrink-0 border-r bg-background h-screen sticky top-0">
       <div className="flex h-14 items-center border-b px-4">
-        <span className="font-semibold text-sm">pgm-acervo</span>
+        <span className="font-bold text-emerald-800 text-sm tracking-tight">pgm-acervo</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
