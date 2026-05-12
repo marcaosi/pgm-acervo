@@ -1,6 +1,5 @@
 "use server"
 
-import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { auth } from "@/auth"
@@ -30,7 +29,12 @@ async function uniqueItemCode() {
   return code
 }
 
-async function syncTags(tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], itemId: string, userId: string, tagNames: string[]) {
+async function syncTags(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  itemId: string,
+  userId: string,
+  tagNames: string[]
+) {
   const normalized = tagNames.map((t) => t.trim().toLowerCase()).filter(Boolean)
   const tagIds: string[] = []
 
@@ -58,10 +62,10 @@ export async function createItem(formData: FormData) {
 
   const parsed = schema.safeParse({
     name: formData.get("name"),
-    description: formData.get("description"),
+    description: formData.get("description") ?? undefined,
     type: formData.get("type"),
-    digitalUrl: formData.get("digitalUrl"),
-    digitalFileKey: formData.get("digitalFileKey"),
+    digitalUrl: formData.get("digitalUrl") ?? "",
+    digitalFileKey: formData.get("digitalFileKey") ?? "",
     slotId: formData.get("slotId") || null,
   })
   if (!parsed.success) return { error: parsed.error.issues[0].message }
@@ -88,7 +92,7 @@ export async function createItem(formData: FormData) {
   })
 
   revalidatePath("/itens")
-  redirect(`/itens/${itemId}`)
+  return { id: itemId }
 }
 
 export async function updateItem(id: string, formData: FormData) {
@@ -99,10 +103,10 @@ export async function updateItem(id: string, formData: FormData) {
 
   const parsed = schema.safeParse({
     name: formData.get("name"),
-    description: formData.get("description"),
+    description: formData.get("description") ?? undefined,
     type: formData.get("type"),
-    digitalUrl: formData.get("digitalUrl"),
-    digitalFileKey: formData.get("digitalFileKey"),
+    digitalUrl: formData.get("digitalUrl") ?? "",
+    digitalFileKey: formData.get("digitalFileKey") ?? "",
     slotId: formData.get("slotId") || null,
   })
   if (!parsed.success) return { error: parsed.error.issues[0].message }
@@ -126,12 +130,11 @@ export async function updateItem(id: string, formData: FormData) {
 
   revalidatePath("/itens")
   revalidatePath(`/itens/${id}`)
-  redirect(`/itens/${id}`)
+  return { id }
 }
 
 export async function deleteItem(id: string) {
   const userId = await getUserId()
   await prisma.item.deleteMany({ where: { id, userId } })
   revalidatePath("/itens")
-  redirect("/itens")
 }

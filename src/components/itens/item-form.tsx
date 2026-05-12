@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
+import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Upload, FileText, X } from "lucide-react"
 import { TagInput } from "./tag-input"
@@ -34,8 +35,10 @@ interface ItemFormProps {
 const MAX_SIZE = 50 * 1024 * 1024
 
 export function ItemForm({ action, digitalPreference, locations, cancelHref, initial }: ItemFormProps) {
+  const router = useRouter()
   const [type, setType] = useState<"PHYSICAL" | "DIGITAL">(initial?.type ?? "PHYSICAL")
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadedKey, setUploadedKey] = useState<string | null>(initial?.digitalFileKey ?? null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -93,30 +96,47 @@ export function ItemForm({ action, digitalPreference, locations, cancelHref, ini
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+    // Garante que o tipo está no formData (radio controlado pelo React pode não aparecer)
+    formData.set("type", type)
     setUploadError(null)
+    setFormError(null)
+    setIsPending(true)
 
-    // Se digital + upload, fazer o upload antes de submeter
-    if (type === "DIGITAL" && digitalPreference === "UPLOAD") {
-      let key = uploadedKey
+    try {
+      // Se digital + upload, fazer o upload antes de submeter
+      if (type === "DIGITAL" && digitalPreference === "UPLOAD") {
+        let key = uploadedKey
 
-      if (selectedFile) {
-        key = await uploadFile(selectedFile)
-        if (!key) return // upload falhou, não submete
-        setUploadedKey(key)
+        if (selectedFile) {
+          key = await uploadFile(selectedFile)
+          if (!key) return // upload falhou, não submete
+          setUploadedKey(key)
+        }
+
+        if (key) formData.set("digitalFileKey", key)
+        formData.delete("digitalUrl")
+      } else {
+        formData.delete("digitalFileKey")
       }
 
-      if (key) formData.set("digitalFileKey", key)
-      formData.delete("digitalUrl")
-    } else {
-      formData.delete("digitalFileKey")
-    }
+      const result = await action(formData)
 
-    startTransition(async () => {
-      await action(formData)
-    })
+      if (result?.error) {
+        setFormError(result.error)
+      } else if (result?.id) {
+        router.push(`/itens/${result.id}`)
+      } else {
+        setFormError("Erro inesperado. Tente novamente.")
+      }
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Erro ao salvar. Tente novamente.")
+    } finally {
+      setIsPending(false)
+    }
   }
 
   const isSubmitting = isPending || uploading
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
@@ -269,6 +289,12 @@ export function ItemForm({ action, digitalPreference, locations, cancelHref, ini
         <label className="text-sm font-medium">Slot (opcional)</label>
         <SlotSelector locations={locations} initialSlotId={initial?.slotId} />
       </div>
+
+      {formError && (
+        <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+          {formError}
+        </p>
+      )}
 
       <div className="flex gap-3 pt-2">
         <Link

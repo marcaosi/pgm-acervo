@@ -3,8 +3,7 @@ import Link from "next/link"
 import { ChevronRight, FileDigit, Package, MapPin, ExternalLink, Pencil } from "lucide-react"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { deleteItem } from "@/actions/item"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { DeleteItemButton } from "@/components/itens/delete-item-button"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -65,16 +64,7 @@ export default async function ItemPage({ params }: Props) {
             <Pencil className="h-3.5 w-3.5" />
             Editar
           </Link>
-          <ConfirmDialog
-            title="Remover item?"
-            description={`"${item.name}" será removido permanentemente do seu acervo. Esta ação não pode ser desfeita.`}
-            onConfirm={() => deleteItem(item.id)}
-            trigger={
-              <button className="inline-flex h-9 items-center gap-2 rounded-md border border-destructive/30 px-3 text-sm text-destructive hover:bg-destructive/10">
-                Remover
-              </button>
-            }
-          />
+          <DeleteItemButton id={item.id} name={item.name} />
         </div>
       </div>
 
