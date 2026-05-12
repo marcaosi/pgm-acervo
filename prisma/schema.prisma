@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── NextAuth ─────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Usuários ─────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?   // nulo para usuários que entram apenas pelo Google
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  settings  UserSettings?
+  locations Location[]
+  items     Item[]
+  tags      Tag[]
+}
+
+model UserSettings {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  digitalItemPreference DigitalPreference @default(LINK)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum DigitalPreference {
+  LINK
+  UPLOAD
+}
+
+// ─── Estrutura física ─────────────────────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupers Grouper[]
+
+  @@index([userId])
+}
+
+model Grouper {
+  id         String   @id @default(cuid())
+  name       String
+  locationId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  slots    Slot[]
+}
+
+model Slot {
+  id        String   @id @default(cuid())
+  code      String   @unique // ex: SL-A3K9F
+  name      String
+  grouperId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grouper Grouper @relation(fields: [grouperId], references: [id], onDelete: Cascade)
+  items   Item[]
+}
+
+// ─── Acervo ───────────────────────────────────────────────────────────────────
+
+enum ItemType {
+  PHYSICAL
+  DIGITAL
+}
+
+model Item {
+  id             String   @id @default(cuid())
+  code           String   @unique // ex: IT-B7X2Q
+  name           String
+  description    String?
+  type           ItemType @default(PHYSICAL)
+  digitalUrl     String?  // type=DIGITAL + preferência=LINK
+  digitalFileKey String?  // type=DIGITAL + preferência=UPLOAD (chave no R2)
+  slotId         String?  // nulo = item não alocado
+  userId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slot Slot? @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  tags ItemTag[]
+
+  @@index([userId])
+  @@index([name])
+  @@index([slotId])
+}
+
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id     String @id @default(cuid())
+  name   String
+  userId String
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ItemTag[]
+
+  @@unique([name, userId])
+  @@index([userId])
+}
+
+model ItemTag {
+  itemId String
+  tagId  String
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+}
